@@ -1,39 +1,45 @@
 import React from 'react';
 import { Activity, Users, Zap, ShieldCheck, ExternalLink } from 'lucide-react';
 
-const HealthCards = ({ health, metrics }) => {
+const HealthCards = ({ health = {}, metrics = {}, onGuardrailClick }) => {
+  // Defensive values
+  const apiStatus = health?.status === 'healthy' ? "Operational" : "Error";
+  const activeAgents = "4 / 4";
+  const avgLatency = metrics?.avgResponseTime || "1.4s";
+  const violations = metrics?.guardrailViolations || 0;
+
   const cards = [
     { 
       title: "API Status", 
-      value: health.status === 'healthy' ? "Operational" : "Degraded", 
+      value: apiStatus, 
       sub: "v1.0.0", 
       icon: Activity, 
-      color: health.status === 'healthy' ? "text-brand-green" : "text-brand-red",
-      status: health.status === 'healthy' ? "bg-brand-green" : "bg-brand-red"
+      color: "text-emerald-500",
+      status: health?.status === 'healthy' ? "bg-emerald-500" : "bg-red-500"
     },
     { 
       title: "Active Agents", 
-      value: "4 / 4", 
+      value: activeAgents, 
       sub: "All instances live", 
       icon: Users, 
-      color: "text-brand-blue",
-      status: "bg-brand-green"
+      color: "text-blue-500",
+      status: "bg-blue-500"
     },
     { 
       title: "Avg Latency", 
-      value: metrics.avgResponseTime || "1.4s", 
+      value: avgLatency, 
       sub: "Last 5 mins", 
       icon: Zap, 
-      color: "text-brand-amber",
-      status: "bg-brand-green"
+      color: "text-amber-500",
+      status: "bg-amber-500"
     },
     { 
       title: "Guardrail Events", 
-      value: metrics.guardrailViolations || 0, 
+      value: violations, 
       sub: "Triggered today", 
       icon: ShieldCheck, 
-      color: "text-brand-purple",
-      status: metrics.guardrailViolations > 0 ? "bg-brand-amber" : "bg-brand-green",
+      color: "text-purple-500",
+      status: violations > 0 ? "bg-amber-500" : "bg-emerald-500",
       onClick: onGuardrailClick
     }
   ];
@@ -44,7 +50,7 @@ const HealthCards = ({ health, metrics }) => {
         <div 
           key={idx} 
           onClick={card.onClick}
-          className={`p-4 rounded-xl glass-panel border border-dark-border relative overflow-hidden group ${card.onClick ? 'cursor-pointer hover:border-brand-blue/50' : ''}`}
+          className={`p-4 rounded-xl bg-[#161B22]/50 border border-[#30363D] relative overflow-hidden group ${card.onClick ? 'cursor-pointer hover:border-blue-500/50' : ''}`}
         >
           <div className="flex items-start justify-between relative z-10">
             <div>
@@ -58,11 +64,10 @@ const HealthCards = ({ health, metrics }) => {
           </div>
           {card.onClick && (
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-               <ExternalLink className="w-3 h-3 text-brand-blue" />
+               <ExternalLink className="w-3 h-3 text-blue-500" />
             </div>
           )}
           <div className={`absolute bottom-0 left-0 w-full h-1 ${card.status} opacity-50`}></div>
-          <div className={`absolute -right-4 -bottom-4 w-16 h-16 ${card.status} opacity-[0.03] rounded-full group-hover:scale-150 transition-transform duration-500`}></div>
         </div>
       ))}
     </div>
