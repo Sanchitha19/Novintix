@@ -28,7 +28,14 @@ class IntentClassifier:
                 "What is your shipping policy?",
                 "Do you ship to Mumbai?",
                 "payment methods",
-                "contact support"
+                "contact support",
+                "I couldn't order from my account",
+                "can't place order",
+                "account problem",
+                "why can't I order",
+                "ordering issue",
+                "account blocked",
+                "can't checkout"
             ],
             Intent.HUMAN_ESCALATION: [
                 "Talk to a human",

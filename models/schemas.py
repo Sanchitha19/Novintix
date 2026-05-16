@@ -36,6 +36,7 @@ class AgentResponse(BaseModel):
     response_text: str
     confidence: float
     reasoning: str
+    trace_id: str
     tool_calls: List[ToolCall] = []
     metadata: Dict[str, Any] = {}
     timestamp: datetime = Field(default_factory=datetime.utcnow)
