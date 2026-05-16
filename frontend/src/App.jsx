@@ -9,7 +9,10 @@ function App() {
   const [metrics, setMetrics] = useState(generateInitialMetrics());
   const [events, setEvents] = useState(initialEvents);
 
+  console.log("JWT set:", token);
+
   const handleLogin = (newToken) => {
+    console.log("handleLogin called with:", newToken);
     setToken(newToken);
   };
 

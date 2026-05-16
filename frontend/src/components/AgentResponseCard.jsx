@@ -3,7 +3,8 @@ import { Bot, Shield, AlertTriangle, Fingerprint } from 'lucide-react';
 import { parseAgentResponse } from '../mockData';
 
 const AgentResponseCard = ({ response }) => {
-  const agentInfo = parseAgentResponse(response.response_text);
+  const responseText = response.response_text || response.text || "";
+  const agentInfo = parseAgentResponse(responseText);
   const guardrailEvents = response.metadata?.guardrail_events || [];
   const isEscalated = response.metadata?.needs_human_approval || response.agent_name === "EscalationAgent";
   const hasGuardrails = guardrailEvents.length > 0;
@@ -31,7 +32,7 @@ const AgentResponseCard = ({ response }) => {
 
       <div className="p-4 rounded-2xl bg-dark-panel border border-dark-border shadow-lg">
         <p className="text-sm leading-relaxed text-slate-200">
-          {response.response_text}
+          {responseText}
         </p>
 
         {hasGuardrails && (

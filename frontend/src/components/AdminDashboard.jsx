@@ -12,6 +12,7 @@ const AdminDashboard = ({ metrics, events }) => {
   const [health, setHealth] = useState({ status: 'healthy' });
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'security', 'agents'
 
   useEffect(() => {
     const pollHealth = async () => {
@@ -40,6 +41,21 @@ const AdminDashboard = ({ metrics, events }) => {
           <p className="text-xs text-slate-500 font-medium">Real-time agent observability & guardrail metrics</p>
         </div>
         <div className="flex items-center gap-4">
+          <div className="flex bg-slate-800/50 rounded-lg p-1 border border-dark-border mr-4">
+            {['overview', 'security', 'agents'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${
+                  activeTab === tab 
+                    ? 'bg-brand-blue text-white shadow-lg shadow-brand-blue/20' 
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-dark-border">
             <RefreshCw className={`w-3.5 h-3.5 text-brand-blue ${isRefreshing ? 'animate-spin' : ''}`} />
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Auto-Refresh ON</span>
@@ -52,49 +68,78 @@ const AdminDashboard = ({ metrics, events }) => {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Row 1: Health Cards */}
-        <HealthCards health={health} metrics={metrics} />
+        {/* Row 1: Health Cards (Always Visible) */}
+        <HealthCards 
+          health={health} 
+          metrics={metrics} 
+          onGuardrailClick={() => setActiveTab('security')} 
+        />
 
-        {/* Row 2: Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 p-6 rounded-2xl glass-panel border border-dark-border min-h-[300px]">
-            <QueryVolumeChart data={metrics.queryVolume} />
-          </div>
-          <div className="p-6 rounded-2xl glass-panel border border-dark-border min-h-[300px]">
-            <IntentDonut data={metrics.intentDistribution} />
-          </div>
-        </div>
-
-        {/* Row 3: Agents & Events */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="p-6 rounded-2xl glass-panel border border-dark-border">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Agent Performance Cluster</h3>
-                <button className="text-[10px] font-bold text-brand-blue hover:underline flex items-center gap-1">
-                  DETAILED VIEW <ExternalLink className="w-3 h-3" />
-                </button>
+        {activeTab === 'overview' && (
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+            {/* Row 2: Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 p-6 rounded-2xl glass-panel border border-dark-border min-h-[300px]">
+                <QueryVolumeChart data={metrics.queryVolume} />
               </div>
-              <AgentStatusGrid agents={metrics.agentStatus} />
+              <div className="p-6 rounded-2xl glass-panel border border-dark-border min-h-[300px]">
+                <IntentDonut data={metrics.intentDistribution} />
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="p-6 rounded-2xl glass-panel border border-dark-border min-h-[280px]">
-                  <GuardrailCounter metrics={metrics} />
-               </div>
-               <div className="p-6 rounded-2xl glass-panel border border-dark-border min-h-[280px]">
-                  {/* Additional stats or empty for balance */}
-                  <div className="flex flex-col h-full justify-center items-center opacity-40">
-                    <Clock className="w-12 h-12 text-slate-600 mb-2" />
-                    <span className="text-xs font-bold uppercase tracking-widest">Historical Trends Loading...</span>
+
+            {/* Row 3: Agents & Events */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="p-6 rounded-2xl glass-panel border border-dark-border">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Agent Performance Cluster</h3>
+                    <button 
+                      onClick={() => setActiveTab('agents')}
+                      className="text-[10px] font-bold text-brand-blue hover:underline flex items-center gap-1"
+                    >
+                      DETAILED VIEW <ExternalLink className="w-3 h-3" />
+                    </button>
                   </div>
-               </div>
+                  <AgentStatusGrid agents={metrics.agentStatus} />
+                </div>
+              </div>
+              <div className="p-6 rounded-2xl glass-panel border border-dark-border h-full">
+                <EventLog events={events} />
+              </div>
             </div>
           </div>
-          
-          <div className="p-6 rounded-2xl glass-panel border border-dark-border h-[620px]">
-            <EventLog events={events} />
+        )}
+
+        {activeTab === 'security' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-right-4 duration-300">
+            <div className="p-6 rounded-2xl glass-panel border border-dark-border">
+              <GuardrailCounter metrics={metrics} />
+            </div>
+            <div className="p-6 rounded-2xl glass-panel border border-dark-border">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">Security Incident Feed</h3>
+              <div className="space-y-4">
+                {events.filter(e => e.type === 'GUARDRAIL' || e.type === 'ESCALATION').map((e, i) => (
+                  <div key={i} className="p-4 rounded-xl bg-dark-bg border border-dark-border">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${e.type === 'GUARDRAIL' ? 'bg-brand-amber/20 text-brand-amber' : 'bg-brand-red/20 text-brand-red'}`}>{e.type}</span>
+                      <span className="text-[10px] font-mono text-slate-600">{e.time}</span>
+                    </div>
+                    <p className="text-sm text-slate-300">{e.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'agents' && (
+          <div className="animate-in slide-in-from-bottom-4 duration-300">
+            <div className="p-6 rounded-2xl glass-panel border border-dark-border">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">Deep Agent Performance Profiling</h3>
+              <AgentStatusGrid agents={metrics.agentStatus} isDetailed={true} />
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Footer */}

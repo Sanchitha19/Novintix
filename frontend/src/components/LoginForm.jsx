@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, User, ArrowRight } from 'lucide-react';
+import { login } from '../api';
 
 const LoginForm = ({ onLogin }) => {
   const [username, setUsername] = useState('johnd');
@@ -9,11 +10,21 @@ const LoginForm = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login for hackathon demo
-    setTimeout(() => {
-      onLogin("mock_jwt_token_" + Math.random());
+    try {
+      const data = await login(username, password);
+      console.log("Login API response:", data);
+      // Pass only the string token
+      if (data && data.access_token) {
+        onLogin(data.access_token);
+      } else {
+        console.error("No access token in response");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Login failed. Check server and credentials.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
