@@ -20,7 +20,8 @@ class IntentClassifier:
                 "Cancel my order and refund",
                 "Return this item",
                 "Money back for order",
-                "refund policy"
+                "refund policy",
+                "refund for order"
             ],
             Intent.FAQ: [
                 "How do I return?",
@@ -33,8 +34,7 @@ class IntentClassifier:
                 "Talk to a human",
                 "I want to speak to an agent",
                 "Connect me to a person",
-                "Customer care number",
-                "help me"
+                "Customer care number"
             ]
         }
         
@@ -43,7 +43,7 @@ class IntentClassifier:
         for intent, examples in self.intent_examples.items():
             self.intent_embeddings[intent] = self.model.encode(examples, convert_to_tensor=True)
 
-    def classify(self, text: str, threshold: float = 0.40) -> List[Tuple[Intent, float]]:
+    def classify(self, text: str, threshold: float = 0.20) -> List[Tuple[Intent, float]]:
         """Classify intent using embedding similarity. Returns list of (Intent, Score)."""
         query_embedding = self.model.encode(text, convert_to_tensor=True)
         
@@ -52,6 +52,7 @@ class IntentClassifier:
             # Calculate max similarity with any example for this intent
             cos_scores = util.cos_sim(query_embedding, embeddings)[0]
             max_score = float(torch.max(cos_scores))
+            print(f"DEBUG: Intent {intent} score: {max_score:.4f}")
             if max_score >= threshold:
                 results.append((intent, max_score))
         

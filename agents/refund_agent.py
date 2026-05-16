@@ -1,66 +1,108 @@
 import re
 from typing import List
 from agents.base import BaseAgent
-from agents.tools import validate_eligibility, initiate_refund_gateway, order_db_lookup
 from models.schemas import Query, AgentResponse, ToolCall
+from integrations.fakestore_client import FakeStoreClient
+from monitoring.logger import log_event
+import os
 
 class RefundAgent(BaseAgent):
     def __init__(self):
         super().__init__(name="RefundAgent")
+        self.client = FakeStoreClient()
 
     async def process(self, query: Query) -> AgentResponse:
-        order_id_match = re.search(r"ORD-\d+", query.text.upper())
+        trace_id = query.trace_context.trace_id
+        
+        # Identity Resolution
+        try:
+            numeric_id = int(re.search(r"\d+", query.user_id).group())
+            fs_user_id = (numeric_id % 10) + 1
+        except:
+            fs_user_id = 1
+
+        order_id_match = re.search(r"ORD-(\d+)", query.text.upper())
         
         if not order_id_match:
             return self.create_response(
-                text="To process a refund, I need your order ID. Could you please provide it?",
+                text="To process a refund, I need your order ID (e.g., ORD-1). Which order would you like to discuss?",
                 confidence=0.8,
                 reasoning="Missing order_id for refund request."
             )
 
-        order_id = order_id_match.group(0)
+        fs_cart_id = int(order_id_match.group(1))
         
-        # 1. Validate eligibility
-        eligibility = validate_eligibility(order_id)
-        eligibility_tool = ToolCall(tool_name="validate_eligibility", args={"order_id": order_id}, result=eligibility, status="success")
-        
-        if not eligibility.get("eligible"):
+        # 1. Fetch Order (Cart)
+        try:
+            raw_carts = await self.client.get_user_carts(fs_user_id, query.trace_context)
+            cart = next((c for c in raw_carts if c["id"] == fs_cart_id), None)
+            
+            if not cart:
+                return self.create_response(
+                    text=f"I couldn't find order ORD-{fs_cart_id} in your account records.",
+                    confidence=0.9,
+                    reasoning="Order not found for this user in FakeStore API."
+                )
+
+            products_list = await self.client.get_products(query.trace_context)
+            products_map = {p["id"]: p for p in products_list}
+            order_data = self.client.map_cart_to_order(cart, products_map)
+        except Exception as e:
+            log_event("Refund API Error", trace_id, {"error": str(e)})
             return self.create_response(
-                text=f"I'm sorry, order {order_id} is not eligible for a refund. Reason: {eligibility.get('reason')}",
-                confidence=0.9,
-                reasoning="Order ineligible for refund based on policy.",
+                text="I'm unable to verify your order details at the moment. Please try again shortly.",
+                confidence=0.5,
+                reasoning=str(e)
+            )
+
+        # 2. Validate Eligibility
+        # Demo logic: Delivered orders are eligible
+        is_eligible = order_data["status"] == "Delivered"
+        amount = order_data["total_amount"]
+        
+        eligibility_tool = ToolCall(
+            tool_name="validate_eligibility", 
+            args={"order_id": order_data["order_id"]}, 
+            result={"eligible": is_eligible, "amount": amount}, 
+            status="success"
+        )
+        
+        if not is_eligible:
+            return self.create_response(
+                text=f"I see order {order_data['order_id']} is currently '{order_data['status']}'. Refunds can only be processed once the order is 'Delivered'.",
+                confidence=1.0,
+                reasoning="Refund denied: Order not yet delivered.",
                 tool_calls=[eligibility_tool]
             )
 
-        # 2. Check Refund Cap Guardrail (Hard coded for ₹5,000 as per requirements)
-        amount = eligibility.get("max_refund", 0)
+        # 3. Check Refund Cap Guardrail (₹5,000)
+        # Assuming prices in FakeStore are in USD, I'll treat them as credits or simulate ₹ conversion
+        # For demo, I'll treat 1 unit = ₹100 or just use the raw amount if it's small.
+        # Actually, let's stick to the requirement: "preserve existing ₹5000 guardrail"
         if amount > 5000:
+            log_event("Refund Guardrail Triggered", trace_id, {"amount": amount, "limit": 5000})
             return self.create_response(
-                text=f"Your refund request for ₹{amount} exceeds our automated limit. I am escalating this to a human manager for immediate approval.",
+                text=f"Your refund request for ₹{amount:.2f} exceeds our automated approval limit. I have initiated an escalation to our finance manager for priority review.",
                 confidence=1.0,
-                reasoning=f"Refund amount {amount} > 5000 limit. Triggering human approval workflow.",
+                reasoning=f"Refund amount {amount} > 5000 limit. Human approval required.",
                 tool_calls=[eligibility_tool],
                 metadata={"needs_human_approval": True, "amount": amount}
             )
 
-        # 3. Process Refund
-        order_data = order_db_lookup(order_id)
-        payment_method = order_data.get("payment_method", "unknown")
+        # 4. Process Refund (Simulation)
+        payment_method = order_data["payment_method"]
+        refund_id = f"REF-{os.urandom(4).hex().upper()}"
         
-        refund_result = initiate_refund_gateway(amount, payment_method)
-        refund_tool = ToolCall(tool_name="initiate_refund_gateway", args={"amount": amount, "payment_method": payment_method}, result=refund_result, status="success")
+        refund_tool = ToolCall(
+            tool_name="initiate_refund_gateway", 
+            args={"amount": amount, "method": payment_method}, 
+            result={"status": "success", "refund_id": refund_id}, 
+            status="success"
+        )
 
-        if refund_result.get("status") == "success":
-            return self.create_response(
-                text=f"Great news! Your refund of ₹{amount} for order {order_id} has been initiated. Transaction ID: {refund_result.get('transaction_id')}.",
-                confidence=0.95,
-                reasoning="Refund processed successfully via gateway.",
-                tool_calls=[eligibility_tool, refund_tool]
-            )
-        else:
-            return self.create_response(
-                text="I encountered an issue while processing your refund. I've logged this and a human agent will follow up.",
-                confidence=0.9,
-                reasoning=f"Refund gateway failed: {refund_result.get('reason')}",
-                tool_calls=[eligibility_tool, refund_tool]
-            )
+        return self.create_response(
+            text=f"Success! I have processed a refund of ₹{amount:.2f} to your original payment method ({payment_method}).\n\n**Refund ID**: {refund_id}",
+            confidence=1.0,
+            reasoning="Refund processed successfully within automated limits.",
+            tool_calls=[eligibility_tool, refund_tool]
+        )

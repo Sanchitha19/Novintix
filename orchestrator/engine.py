@@ -66,7 +66,13 @@ class Orchestrator:
             tasks.append(agent.process(query))
 
         # 3. Execute Agents in Parallel
-        responses = await asyncio.gather(*tasks)
+        try:
+            responses = await asyncio.gather(*tasks)
+        except Exception as e:
+            log_event("Agent execution error", query.trace_context.trace_id, {"error": str(e)})
+            response = await self.fallback_agent.process(query)
+            response.reasoning = f"Agent failed: {str(e)}"
+            return [response]
         
         # 4. Post-process Guardrails
         responses = await self.guardrails.post_process(responses, query.trace_context.trace_id)

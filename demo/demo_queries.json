@@ -1,0 +1,45 @@
+{
+  "demo_flows": [
+    {
+      "scenario": "Order Tracking - Single Order",
+      "query": "Where is my order ORD-1?",
+      "expected_behavior": "Should return status and ETA for cart #1."
+    },
+    {
+      "scenario": "Order Tracking - Multi-order Disambiguation",
+      "query": "I want to track my recent order",
+      "expected_behavior": "Should list multiple orders and ask for clarification."
+    },
+    {
+      "scenario": "Order Tracking - Delayed Shipment",
+      "query": "Where is my package ORD-5?",
+      "expected_behavior": "Should show status and include the seasonal volume delay warning."
+    },
+    {
+      "scenario": "Refund - Eligible (Under 5000)",
+      "query": "I want a refund for order ORD-1",
+      "expected_behavior": "Should process refund automatically if status is delivered."
+    },
+    {
+      "scenario": "Refund - High Value Escalation",
+      "query": "Process a refund for ORD-15",
+      "expected_behavior": "Should trigger human escalation if amount > 5000."
+    },
+    {
+      "scenario": "FAQ - Product Knowledge",
+      "query": "Tell me about the Mens Casual Slim Fit shirt",
+      "expected_behavior": "Should retrieve product details from FakeStore via RAG."
+    },
+    {
+      "scenario": "FAQ - Policy Knowledge",
+      "query": "What is your return policy?",
+      "expected_behavior": "Should retrieve return policy from local MD files via RAG."
+    },
+    {
+      "scenario": "Identity Resolution - Session Isolation",
+      "query": "Show my orders",
+      "user_id": "user_003",
+      "expected_behavior": "Should map user_003 to FakeStore user #4 and show only their carts."
+    }
+  ]
+}

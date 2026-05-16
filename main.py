@@ -9,7 +9,19 @@ from utils.auth import verify_token, create_access_token
 import uvicorn
 import time
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Novintix Agentic Support System")
+
+# Allow CORS for the React frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 orch = Orchestrator()
 
 class QueryRequest(BaseModel):

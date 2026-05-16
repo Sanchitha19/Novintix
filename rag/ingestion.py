@@ -1,4 +1,5 @@
 import os
+import json
 from typing import List
 from langchain_community.document_loaders import TextLoader, DirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -22,6 +23,17 @@ class PolicyIngestor:
         
         chunks = self.text_splitter.split_documents(docs)
         print(f"DEBUG: Loaded {len(docs)} documents and created {len(chunks)} chunks.")
+        return chunks
+
+    def ingest_fakestore_products(self, products: List[dict]) -> List[Document]:
+        """Convert FakeStore products into Documents for RAG ingestion."""
+        docs = []
+        for p in products:
+            content = f"Product: {p['title']}\nCategory: {p['category']}\nDescription: {p['description']}\nPrice: ${p['price']}"
+            metadata = {"source": "fakestore_api", "id": p["id"], "type": "product"}
+            docs.append(Document(page_content=content, metadata=metadata))
+        
+        chunks = self.text_splitter.split_documents(docs)
         return chunks
 
     def update_delta(self, new_file_path: str):
