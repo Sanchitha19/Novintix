@@ -13,15 +13,18 @@ class IntentClassifier:
                 "Track my package",
                 "Delivery status",
                 "When will my order arrive?",
-                "shipping status"
+                "shipping status",
+                "order status",
+                "where is my package ORD",
             ],
             Intent.REFUND: [
                 "I want a refund",
                 "Cancel my order and refund",
                 "Return this item",
                 "Money back for order",
-                "refund policy",
-                "refund for order"
+                "refund for order",
+                "I need to return my purchase",
+                "process a refund",
             ],
             Intent.FAQ: [
                 "How do I return?",
@@ -35,13 +38,22 @@ class IntentClassifier:
                 "why can't I order",
                 "ordering issue",
                 "account blocked",
-                "can't checkout"
+                "can't checkout",
+                "tell me about this product",
+                "what is your return policy",
+                "what products do you sell",
+                "mens casual shirt details",
+                "product information",
+                "policy question",
+                "how do I use my account",
             ],
             Intent.HUMAN_ESCALATION: [
                 "Talk to a human",
                 "I want to speak to an agent",
                 "Connect me to a person",
-                "Customer care number"
+                "Customer care number",
+                "I am very angry speak to manager immediately",
+                "this is absolutely terrible I want a manager",
             ]
         }
         

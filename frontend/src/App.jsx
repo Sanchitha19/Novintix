@@ -28,11 +28,20 @@ function App() {
   };
 
   const handleNewInteraction = (queryText, responses) => {
-    // Metric update logic (Simplified for stability)
+    if (!responses || responses.length === 0) return;
+    
+    const res = responses[0];
+    const routing = res.metadata?.routing;
+    
+    let text = "User query processed";
+    if (routing) {
+      text = `Query routed to ${res.agent_name} — intent: ${routing.intent}, confidence: ${routing.confidence.toFixed(2)}, latency: ${routing.latency_ms.toFixed(0)}ms`;
+    }
+
     setEvents(prev => [{
       id: Date.now(),
       type: 'ROUTING',
-      text: `User query processed`,
+      text: text,
       time: new Date().toLocaleTimeString(),
       color: 'blue'
     }, ...prev].slice(0, 10));

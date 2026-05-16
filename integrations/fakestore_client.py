@@ -52,12 +52,21 @@ class FakeStoreClient:
         if self.mock_mode:
             # Return realistic mock data based on endpoint
             if "products" in endpoint:
-                return [{"id": 1, "title": "Mens Casual Slim Fit", "price": 15.99, "description": "The color could be slightly different between on the screen and in practice.", "category": "men's clothing", "image": ""},
+                products = [{"id": 1, "title": "Mens Casual Slim Fit", "price": 15.99, "description": "The color could be slightly different between on the screen and in practice.", "category": "men's clothing", "image": ""},
                         {"id": 15, "title": "Expensive Jacket", "price": 5600.0, "description": "Luxury item", "category": "men's clothing", "image": ""}]
+                if endpoint.startswith("/products/") and len(endpoint) > 10:
+                    try:
+                        pid = int(endpoint.split("/")[-1])
+                        return next((p for p in products if p["id"] == pid), products[0])
+                    except ValueError:
+                        pass
+                return products
             if "carts/user" in endpoint:
                 return [{"id": 1, "userId": 1, "date": "2026-05-10T12:00:00Z", "products": [{"productId": 1, "quantity": 1}]},
                         {"id": 5, "userId": 1, "date": "2026-05-12T12:00:00Z", "products": [{"productId": 1, "quantity": 2}]},
                         {"id": 15, "userId": 1, "date": "2026-05-14T12:00:00Z", "products": [{"productId": 15, "quantity": 1}]}]
+            if "carts" in endpoint:
+                return [{"id": 1, "userId": 1, "date": "2026-05-10T12:00:00Z", "products": [{"productId": 1, "quantity": 1}]}]
             if "users" in endpoint:
                 return [{"id": 1, "email": "john@gmail.com", "name": {"firstname": "John", "lastname": "Doe"}, "address": {"city": "Delhi", "street": "Main", "number": 12}, "phone": "123-456-7890"}]
             return {}
@@ -176,8 +185,8 @@ class FakeStoreClient:
             "status": status,
             "items": items,
             "total_amount": total_amount,
-            "created_at": created_at,
-            "eta": eta,
+            "created_at": created_at.isoformat(),
+            "eta": eta.isoformat(),
             "tracking_id": f"TRK-FS-{cart['id']}{int(time.time()) % 1000}",
             "payment_method": "Card" if cart["id"] % 2 == 0 else "UPI"
         }

@@ -11,7 +11,7 @@ async def run_demo():
             health = await client.get(f"{BASE_URL}/health")
             print(f"Health: {health.status_code} - {health.json()}")
             
-            token_res = await client.post(f"{BASE_URL}/token")
+            token_res = await client.post(f"{BASE_URL}/token", json={"username": "johnd", "password": "m38mzuvjxl"})
             token = token_res.json()["access_token"]
             headers = {"Authorization": f"Bearer {token}"}
             
@@ -27,20 +27,27 @@ async def run_demo():
                 {"name": "Guardrail - Loop", "query": "Hello", "repeat": 4}
             ]
             
-            for s in scenarios:
+            for idx, s in enumerate(scenarios):
                 print(f"\n[Scenario: {s['name']}]")
+                session = f"demo_session_{idx}"
                 if s.get("repeat"):
+                    loop_session = "loop_test_session"
                     for i in range(s["repeat"]):
-                        res = await client.post(f"{BASE_URL}/query", json={"user_id": "user_001", "text": s["query"], "session_id": "loop_test"}, headers=headers)
+                        res = await client.post(f"{BASE_URL}/query", json={"user_id": "user_001", "text": s["query"], "session_id": loop_session}, headers=headers)
                         if i == s["repeat"] - 1 or res.status_code != 200:
                             print(f"Result (Hop {i+1}): Status {res.status_code}")
-                            print(f"Response: {res.text}")
+                            if res.status_code == 200:
+                                data = res.json()
+                                for r in data:
+                                    print(f"Agent [{r['agent_name']}]: {r['response_text'][:300]}")
+                            else:
+                                print(f"Response: {res.text}")
                 else:
-                    res = await client.post(f"{BASE_URL}/query", json={"user_id": "user_001", "text": s["query"], "session_id": "demo_session"}, headers=headers)
+                    res = await client.post(f"{BASE_URL}/query", json={"user_id": "user_001", "text": s["query"], "session_id": session}, headers=headers)
                     if res.status_code == 200:
                         data = res.json()
                         for r in data:
-                            print(f"Agent [{r['agent_name']}]: {r['response_text']}")
+                            print(f"Agent [{r['agent_name']}]: {r['response_text'][:400]}")
                     else:
                         print(f"FAILED: {res.status_code} - {res.text}")
 

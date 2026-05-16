@@ -5,6 +5,8 @@ from fastapi import Response
 QUERY_COUNT = Counter("novintix_queries_total", "Total number of queries processed", ["intent"])
 LATENCY = Histogram("novintix_request_latency_seconds", "Latency of requests in seconds")
 GUARDRAIL_VIOLATIONS = Counter("novintix_guardrail_violations_total", "Total number of guardrail violations", ["type"])
+GUARDRAIL_VIOLATIONS_TOTAL = Counter("guardrail_violations_total", "Total number of guardrail violations")
+QUERY_VOLUME = Counter("query_volume_total", "Total volume of queries received")
 REFUND_AMOUNT = Counter("novintix_refund_amount_total", "Total amount refunded")
 AGENT_LOAD = Gauge("novintix_agent_load", "Current number of active agent tasks", ["agent_name"])
 

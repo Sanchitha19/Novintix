@@ -34,17 +34,23 @@ class HybridRetriever:
                 self.vectorstore = None
                 self.bm25_retriever = None
 
-    def get_ensemble_retriever(self, docs: List[Document]):
+    def get_ensemble_retriever(self, docs: List[Document] = []):
         """Create an ensemble retriever with RRF scoring."""
         vector_retriever = self.vectorstore.as_retriever(search_kwargs={"k": 5})
-        bm25_retriever = BM25Retriever.from_documents(docs)
-        bm25_retriever.k = 5
         
-        ensemble_retriever = EnsembleRetriever(
-            retrievers=[bm25_retriever, vector_retriever],
-            weights=[0.5, 0.5]
-        )
-        return ensemble_retriever
+        bm25_retriever = self.bm25_retriever
+        if not bm25_retriever and docs:
+            bm25_retriever = BM25Retriever.from_documents(docs)
+            
+        if bm25_retriever:
+            bm25_retriever.k = 5
+            ensemble_retriever = EnsembleRetriever(
+                retrievers=[bm25_retriever, vector_retriever],
+                weights=[0.5, 0.5]
+            )
+            return ensemble_retriever
+        else:
+            return vector_retriever
 
     async def search(self, query: str, docs: List[Document] = []) -> List[Dict[str, Any]]:
         """Perform hybrid search and return results with mock scores."""
